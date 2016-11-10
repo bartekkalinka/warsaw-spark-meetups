@@ -1,4 +1,4 @@
-name := "spark-custom-rule-executor"
+name := "spark-structured-streaming-window"
 
 version := "1.0"
 
