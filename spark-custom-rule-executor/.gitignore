@@ -1,0 +1,13 @@
+project/project
+project/target/
+target/
+.idea
+.ensime
+.ensime_cache/
+**/*~
+**/#*#
+**/.#*
+**/application.conf
+metastore_db
+spark-warehouse
+derby.log
