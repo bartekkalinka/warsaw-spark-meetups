@@ -1,7 +1,7 @@
 package xml
 
 import org.apache.spark.sql._
-import org.apache.spark.sql.execution.streaming.{Offset, Source}
+import org.apache.spark.sql.execution.streaming.{LongOffset, Offset, Source}
 import org.apache.spark.sql.sources.{DataSourceRegister, StreamSourceProvider}
 import org.apache.spark.sql.streaming.Trigger
 import org.apache.spark.sql.types.{StringType, StructField, StructType}
@@ -14,7 +14,7 @@ class XmlSourceProvider extends StreamSourceProvider with DataSourceRegister {
                     schema: Option[StructType],
                     providerName: String,
                     parameters: Map[String, String]): (String, StructType) =
-    ("hello world", StructType(Seq(StructField("value", StringType))))
+    ("xml", schema.get)
 
   override def createSource(
                     sqlContext: SQLContext,
@@ -22,20 +22,27 @@ class XmlSourceProvider extends StreamSourceProvider with DataSourceRegister {
                     schema: Option[StructType],
                     providerName: String,
                     parameters: Map[String, String]): Source = {
-    val spark = SparkSession.getActiveSession.get
-    val srcSchema = sourceSchema(sqlContext, schema, providerName, parameters)._2
-    new XmlSource(spark, srcSchema)
+    new XmlSource(schema.get)
   }
 
   override def shortName(): String = "xml"
 }
 
-class XmlSource(sparkSession: SparkSession, override val schema: StructType) extends Source {
-  import sparkSession.implicits._
+class XmlSource(override val schema: StructType) extends Source {
 
-  override def getOffset: Option[Offset] = None
+  override def getOffset: Option[Offset] = Some(LongOffset(0))
 
-  override def getBatch(start: Option[Offset], end: Offset): DataFrame = Seq("a", "b").toDF
+  override def getBatch(start: Option[Offset], end: Offset): DataFrame = {
+    println(s"getBatch($start, $end)")
+    val spark = SparkSession.getActiveSession.get
+    import spark.implicits._
+    import org.apache.spark.sql.functions._
+    val hello = spark.range(1).
+      withColumn("nc1", lit("Nested")).
+      withColumn("nc2", lit("Nested2")).
+      select(struct($"nc1", $"nc2") as "c1")
+    hello
+  }
 
   override def stop(): Unit = ()
 }
